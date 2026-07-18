@@ -1,540 +1,405 @@
-/* ===== 设计令牌 ===== */
-:root {
-  --bg: #0B0B12;
-  --bg2: #111119;
-  --card: #16162A;
-  --card-hover: #1E1E38;
-  --border: #2A2A45;
-  --fg: #EEEEF0;
-  --fg-muted: #7A7A8E;
-  --accent: #FF5E3A;
-  --accent-glow: rgba(255, 94, 58, 0.25);
-  --gold: #FFB84D;
-  --gold-glow: rgba(255, 184, 77, 0.2);
-  --success: #4ADE80;
-  --radius: 14px;
-  --radius-sm: 8px;
-  --font: 'Space Grotesk', sans-serif;
-  --mono: 'JetBrains Mono', monospace;
+/* ===== 角色配色 ===== */
+const ROLE_COLORS = {
+  'Admin':          '#FF4757',
+  '𝓶𝓸𝓭𝓮𝓻𝓪𝓽𝓸𝓻  🛡️': '#FFA502',
+  'ᑌᑎISIOᑎS 🏅':   '#F5C542',
+  'Fashionistas':   '#FF6B81',
+  'Cinephiles':     '#C084FC',
+  'Readers':        '#2DD4BF',
+  'Roasters':       '#FF6348',
+  'Gamers':         '#4ADE80',
+  'Artists':        '#FB923C',
+  'Techies':        '#22D3EE',
+  'Gym Rats':       '#A3E635',
+  'She/Her':        '#F472B6',
+  'He/Him':         '#60A5FA',
+  'Undergraduate':  '#A78BFA',
+  'Free Spirit':    '#FBBF24',
+  'Chat Revival':   '#34D399',
+  'Ask':            '#FB7185',
+  'RGB 2':          '#EF4444',
+  'RGB 3':          '#22C55E',
+  'RGB 4':          '#3B82F6',
+  'RGB 5':          '#A855F7',
+  'Lemon':          '#FACC15',
+  'Kiwi':           '#84CC16',
+  'Blueberry':      '#818CF8',
+  'Grapes':         '#9333EA',
+  'BOT':            '#6B7280',
+};
+
+/* 通用角色 — 从徽章和图表中隐藏 */
+const HIDDEN_ROLES = new Set(['Members', 'ᑌᑎISIOᑎS 🏅']);
+
+/* 代词角色 — 不算"社区氛围" */
+const PRONOUN_ROLES = new Set(['He/Him', 'She/Her', 'They/Them']);
+
+/* Zalgo 检测 */
+function isZalgo(s) {
+  return /[\u0300-\u036F\u0483-\u0489\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]/u.test(s);
 }
 
-/* ===== 全局重置 ===== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--fg);
-  min-height: 100vh;
-  overflow-x: hidden;
-  line-height: 1.6;
-}
-a { color: var(--accent); text-decoration: none; }
+/* ===== 状态 ===== */
+let DATA = null;
+let filter = 'all';
+let query = '';
+let botsOn = true;
+let view = 'grid';
 
-/* ===== 动态背景光斑 ===== */
-.bg-orbs {
-  position: fixed; inset: 0; z-index: 0;
-  pointer-events: none; overflow: hidden;
-}
-.bg-orbs .orb {
-  position: absolute; border-radius: 50%;
-  filter: blur(120px); opacity: 0.3;
-}
-.bg-orbs .orb-1 {
-  width: 600px; height: 600px; top: -15%; left: -10%;
-  background: radial-gradient(circle, #FF5E3A, transparent 70%);
-  animation: orbF1 18s ease-in-out infinite;
-}
-.bg-orbs .orb-2 {
-  width: 500px; height: 500px; bottom: -10%; right: -8%;
-  background: radial-gradient(circle, #FFB84D, transparent 70%);
-  animation: orbF2 22s ease-in-out infinite;
-}
-.bg-orbs .orb-3 {
-  width: 400px; height: 400px; top: 40%; right: 15%;
-  background: radial-gradient(circle, #2DD4BF, transparent 70%);
-  animation: orbF3 20s ease-in-out infinite;
-}
-.bg-orbs .orb-4 {
-  width: 350px; height: 350px; bottom: 20%; left: 20%;
-  background: radial-gradient(circle, #F472B6, transparent 70%);
-  animation: orbF4 25s ease-in-out infinite;
-}
-@keyframes orbF1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(80px,60px)} }
-@keyframes orbF2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-60px,-80px)} }
-@keyframes orbF3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-50px,70px)} }
-@keyframes orbF4 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(70px,-50px)} }
-
-/* 噪点纹理 */
-.bg-orbs::after {
-  content: ''; position: absolute; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  background-size: 128px; opacity: 0.6;
+/* ===== 工具 ===== */
+function relTime(d) {
+  const s = Math.floor((Date.now() - new Date(d)) / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const day = Math.floor(h / 24);
+  if (day < 30) return day + 'd ago';
+  const mo = Math.floor(day / 30);
+  if (mo < 12) return mo + 'mo ago';
+  return Math.floor(mo / 12) + 'y ago';
 }
 
-/* ===== 容器 ===== */
-.container {
-  position: relative; z-index: 1;
-  max-width: 1300px; margin: 0 auto; padding: 0 24px;
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-/* ===== 导航栏 ===== */
-nav {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(11,11,18,0.82);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 0;
-}
-nav .container {
-  display: flex; align-items: center;
-  justify-content: space-between; gap: 12px; flex-wrap: wrap;
-}
-.nav-logo {
-  display: flex; align-items: center; gap: 10px;
-  font-weight: 700; font-size: 1.1rem; letter-spacing: -0.5px;
-}
-.logo-icon {
-  width: 34px; height: 34px; border-radius: 9px;
-  background: linear-gradient(135deg, var(--accent), var(--gold));
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 0.95rem; color: #fff;
-}
-.nav-actions { display: flex; align-items: center; gap: 8px; }
-.nav-btn {
-  background: var(--card); border: 1px solid var(--border);
-  color: var(--fg-muted); border-radius: var(--radius-sm);
-  padding: 7px 14px; cursor: pointer; font-family: var(--font);
-  font-size: 0.82rem; transition: all 0.2s;
-  display: flex; align-items: center; gap: 6px; white-space: nowrap;
-}
-.nav-btn:hover {
-  color: var(--fg); border-color: var(--accent);
-  background: var(--card-hover);
-}
-.nav-btn.active {
-  color: var(--accent); border-color: var(--accent);
-  background: rgba(255,94,58,0.08);
-}
-.nav-btn.accent-btn {
-  background: linear-gradient(135deg, var(--accent), #e04a28);
-  color: #fff; border-color: transparent; font-weight: 600;
-}
-.nav-btn.accent-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px var(--accent-glow);
-}
-.kbd-hint {
-  font-family: var(--mono); font-size: 0.68rem;
-  background: rgba(255,255,255,0.07); padding: 2px 5px;
-  border-radius: 3px; color: var(--fg-muted);
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
 }
 
-/* ===== 英雄区 ===== */
-.hero { text-align: center; padding: 72px 0 32px; }
-.hero-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(255,94,58,0.08); border: 1px solid rgba(255,94,58,0.18);
-  padding: 5px 16px; border-radius: 50px; font-size: 0.8rem;
-  color: var(--accent); margin-bottom: 20px; font-weight: 500;
-}
-.hero-badge i { font-size: 0.65rem; }
-.hero h1 {
-  font-size: clamp(2.6rem, 6vw, 4.2rem); font-weight: 800;
-  letter-spacing: -2px; line-height: 1.05; margin-bottom: 14px;
-  background: linear-gradient(135deg, #fff 25%, var(--accent) 65%, var(--gold));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.hero-sub {
-  color: var(--fg-muted); font-size: 1.05rem; max-width: 500px; margin: 0 auto;
-}
-.hero-sub span { color: var(--fg); font-weight: 600; }
+function roleColor(r) { return ROLE_COLORS[r] || '#6B7280'; }
+function isColored(r) { return r in ROLE_COLORS; }
 
-/* ===== 统计卡片 ===== */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
-  gap: 14px; margin: 36px 0;
-}
-.stat-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 20px 18px;
-  transition: all 0.3s; position: relative; overflow: hidden;
-}
-.stat-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent), var(--gold));
-  opacity: 0; transition: opacity 0.3s;
-}
-.stat-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(255,94,58,0.3);
-}
-.stat-card:hover::before { opacity: 1; }
-.stat-icon {
-  width: 38px; height: 38px; border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.95rem; margin-bottom: 12px;
-}
-.stat-number {
-  font-size: 1.7rem; font-weight: 800;
-  font-family: var(--mono); letter-spacing: -1px;
-}
-.stat-label {
-  color: var(--fg-muted); font-size: 0.8rem;
-  margin-top: 3px; font-weight: 500;
+function memberAccent(roles) {
+  for (const r of roles) {
+    if (ROLE_COLORS[r] && r !== 'BOT' && r !== 'Members' && r !== 'ᑌᑎISIOᑎS 🏅') return ROLE_COLORS[r];
+  }
+  return 'var(--border-light)';
 }
 
-/* ===== 社区氛围图 ===== */
-.vibes-section { margin: 44px 0; }
-.section-header {
-  display: flex; align-items: center;
-  justify-content: space-between; margin-bottom: 20px;
-  flex-wrap: wrap; gap: 12px;
-}
-.section-title {
-  font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px;
-}
-.vibe-desc {
-  color: var(--fg-muted); font-size: 0.88rem; max-width: 520px;
-  padding: 13px 18px; background: var(--card);
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  border-left: 3px solid var(--accent); margin-bottom: 22px;
-  line-height: 1.65;
-}
-.vibe-desc strong { color: var(--fg); }
-.chart-bars { display: flex; flex-direction: column; gap: 9px; }
-.chart-row { display: flex; align-items: center; gap: 12px; }
-.chart-label {
-  min-width: 100px; font-size: 0.8rem; color: var(--fg-muted);
-  text-align: right; font-weight: 500; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
-}
-.chart-bar-bg {
-  flex: 1; height: 26px; background: rgba(255,255,255,0.035);
-  border-radius: 6px; overflow: hidden;
-}
-.chart-bar-fill {
-  height: 100%; border-radius: 6px;
-  transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
-  width: 0; display: flex; align-items: center;
-  padding-left: 10px; font-size: 0.72rem;
-  font-weight: 600; color: #fff; min-width: fit-content;
-}
-.chart-count {
-  min-width: 28px; font-size: 0.8rem;
-  color: var(--fg-muted); font-family: var(--mono);
+function visibleRoles(roles) {
+  return roles.filter(r => !HIDDEN_ROLES.has(r) && !isZalgo(r));
 }
 
-/* ===== 控制区 ===== */
-.controls {
-  margin: 44px 0 24px;
-  display: flex; flex-direction: column; gap: 14px;
-}
-.controls-top {
-  display: flex; align-items: center;
-  gap: 10px; flex-wrap: wrap;
-}
-.search-box { flex: 1; min-width: 220px; position: relative; }
-.search-box i {
-  position: absolute; left: 14px; top: 50%;
-  transform: translateY(-50%); color: var(--fg-muted); font-size: 0.85rem;
-}
-.search-box input {
-  width: 100%; background: var(--card);
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  padding: 11px 14px 11px 38px; color: var(--fg);
-  font-family: var(--font); font-size: 0.88rem;
-  outline: none; transition: all 0.2s;
-}
-.search-box input::placeholder { color: var(--fg-muted); }
-.search-box input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-.filter-chips {
-  display: flex; gap: 8px; overflow-x: auto;
-  padding-bottom: 4px; scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-.filter-chips::-webkit-scrollbar { height: 4px; }
-.filter-chips::-webkit-scrollbar-track { background: transparent; }
-.filter-chips::-webkit-scrollbar-thumb {
-  background: var(--border); border-radius: 4px;
-}
-.chip {
-  flex-shrink: 0; padding: 6px 14px; border-radius: 50px;
-  font-size: 0.78rem; font-weight: 500; cursor: pointer;
-  border: 1px solid var(--border); background: var(--card);
-  color: var(--fg-muted); transition: all 0.2s;
-  display: flex; align-items: center; gap: 5px;
-}
-.chip:hover { border-color: rgba(255,255,255,0.15); color: var(--fg); }
-.chip.active {
-  border-color: var(--chip-color, var(--accent));
-  color: #fff;
-  background: var(--chip-color, var(--accent));
-}
-.chip .chip-count {
-  font-family: var(--mono); font-size: 0.7rem; opacity: 0.7;
-}
-.results-info {
-  font-size: 0.82rem; color: var(--fg-muted);
-  font-family: var(--mono);
+const GRADS = [
+  'linear-gradient(135deg,#FF6B4A,#FF2D55)',
+  'linear-gradient(135deg,#F5C542,#FF9500)',
+  'linear-gradient(135deg,#2DD4BF,#06B6D4)',
+  'linear-gradient(135deg,#A78BFA,#7C3AED)',
+  'linear-gradient(135deg,#F472B6,#EC4899)',
+  'linear-gradient(135deg,#4ADE80,#16A34A)',
+  'linear-gradient(135deg,#FB923C,#EA580C)',
+  'linear-gradient(135deg,#38BDF8,#3B82F6)',
+];
+function avatarGrad(name) {
+  let h = 0;
+  for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return GRADS[Math.abs(h) % GRADS.length];
 }
 
-/* ===== 成员网格 ===== */
-.members-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px; padding-bottom: 60px;
-}
-.members-grid.list-view {
-  grid-template-columns: 1fr;
+/* ===== 统计 ===== */
+function stats(members) {
+  const humans = members.filter(m => !m.bot);
+  const bots = members.filter(m => m.bot);
+  const allR = new Set();
+  members.forEach(m => m.roles.forEach(r => allR.add(r)));
+
+  /* 角色计数（排除通用和乱码） */
+  const rc = {};
+  members.forEach(m => m.roles.forEach(r => {
+    if (!HIDDEN_ROLES.has(r) && !isZalgo(r)) rc[r] = (rc[r] || 0) + 1;
+  }));
+
+  /* 仅兴趣角色的计数（排除代词）——用于氛围描述 */
+  const vibeR = {};
+  members.forEach(m => m.roles.forEach(r => {
+    if (!HIDDEN_ROLES.has(r) && !isZalgo(r) && !PRONOUN_ROLES.has(r) && r !== 'BOT')
+      vibeR[r] = (vibeR[r] || 0) + 1;
+  }));
+
+  return {
+    total: members.length,
+    humans: humans.length,
+    bots: bots.length,
+    roles: allR.size,
+    admins: humans.filter(m => m.roles.includes('Admin')).length,
+    mods: humans.filter(m => m.roles.includes('𝓶𝓸𝓭𝓮𝓻𝓪𝓽𝓸𝓻  🛡️')).length,
+    rc, vibeR,
+  };
 }
 
-/* ===== 成员卡片 - 网格模式 ===== */
-.member-card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 20px;
-  cursor: pointer; transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  position: relative; overflow: hidden;
-  animation: cardIn 0.4s ease backwards;
-}
-.member-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--card-accent, var(--border));
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3),
-              0 0 0 1px var(--card-accent, transparent);
-  background: var(--card-hover);
-}
-.member-card.spotlight {
-  border-color: var(--gold) !important;
-  box-shadow: 0 0 30px var(--gold-glow), 0 0 60px rgba(255,184,77,0.1) !important;
-  animation: spotlightPulse 1.5s ease-in-out 3;
-}
-@keyframes spotlightPulse {
-  0%,100% { box-shadow: 0 0 30px var(--gold-glow); }
-  50% { box-shadow: 0 0 50px var(--gold-glow), 0 0 80px rgba(255,184,77,0.15); }
-}
-@keyframes cardIn {
-  from { opacity: 0; transform: translateY(16px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.card-avatar {
-  width: 48px; height: 48px; border-radius: 50%;
-  object-fit: cover; flex-shrink: 0;
-  border: 2px solid var(--border); transition: border-color 0.3s;
-}
-.member-card:hover .card-avatar {
-  border-color: var(--card-accent, var(--accent));
-}
-.avatar-fallback {
-  width: 48px; height: 48px; border-radius: 50%;
-  flex-shrink: 0; display: flex; align-items: center;
-  justify-content: center; font-weight: 700; font-size: 1.1rem;
-  color: #fff; border: 2px solid var(--border);
-  transition: border-color 0.3s;
-}
-.member-card:hover .avatar-fallback {
-  border-color: var(--card-accent, var(--accent));
-}
-.card-info { min-width: 0; }
-.card-name {
-  font-weight: 600; font-size: 0.95rem;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.card-username {
-  font-size: 0.78rem; color: var(--fg-muted);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  font-family: var(--mono);
-}
-.card-bot-badge {
-  position: absolute; top: 12px; right: 12px;
-  background: rgba(107,114,128,0.2); color: #9CA3AF;
-  font-size: 0.68rem; font-weight: 600; padding: 3px 8px;
-  border-radius: 4px; display: flex; align-items: center; gap: 4px;
-  border: 1px solid rgba(107,114,128,0.2);
-}
-.card-roles {
-  display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;
-}
-.role-badge {
-  font-size: 0.68rem; padding: 2px 8px; border-radius: 4px;
-  font-weight: 500; white-space: nowrap;
-  background: rgba(255,255,255,0.05); color: var(--fg-muted);
-  border: 1px solid rgba(255,255,255,0.06);
-}
-.role-badge.colored {
-  color: #fff; border-color: transparent;
-}
-.card-joined {
-  font-size: 0.72rem; color: var(--fg-muted);
-  display: flex; align-items: center; gap: 5px;
+/* 氛围描述 —— 基于兴趣角色，不包含代词 */
+function vibeDesc(vibeR) {
+  const sorted = Object.entries(vibeR).sort((a, b) => b[1] - a[1]);
+  if (sorted.length < 2) return 'A growing community finding its identity.';
+  const vm = {
+    'Gamers':'gaming sessions','Techies':'tech deep-dives','Cinephiles':'movie nights',
+    'Readers':'book discussions','Artists':'creative showcases','Fashionistas':'style inspo',
+    'Gym Rats':'fitness check-ins','Roasters':'roasting battles',
+  };
+  const [t1, t2, t3] = sorted.slice(0, 3).map(e => e[0]);
+  const d1 = vm[t1] || `${t1.toLowerCase()} talk`;
+  const d2 = vm[t2] || `${t2.toLowerCase()} discussions`;
+  let txt = `This community runs on <strong>${t1}</strong> and <strong>${t2}</strong> — expect plenty of ${d1} and ${d2}.`;
+  if (t3) txt += ` Throw in some <strong>${t3}</strong> energy and you've got a vibe that's hard to replicate.`;
+  return txt;
 }
 
-/* ===== 列表视图卡片 ===== */
-.list-view .member-card {
-  padding: 14px 20px;
-  display: flex; align-items: center; gap: 16px;
+/* ===== 渲染：统计 ===== */
+function renderStats(s) {
+  const items = [
+    { icon:'fa-users',        bg:'var(--accent-soft)', ic:'var(--accent)', v:s.total,  l:'Total',    accent:'var(--accent)' },
+    { icon:'fa-user',         bg:'var(--teal-soft)',   ic:'var(--teal)',   v:s.humans, l:'Humans',   accent:'var(--teal)' },
+    { icon:'fa-robot',        bg:'rgba(156,163,175,0.08)', ic:'#9CA3AF',  v:s.bots,   l:'Bots',     accent:'#9CA3AF' },
+    { icon:'fa-tags',         bg:'var(--gold-soft)',   ic:'var(--gold)',   v:s.roles,  l:'Roles',    accent:'var(--gold)' },
+    { icon:'fa-shield-halved',bg:'var(--rose-soft)',   ic:'var(--rose)',   v:s.admins, l:'Admins',   accent:'var(--rose)' },
+    { icon:'fa-gavel',        bg:'var(--sky-soft)',    ic:'var(--sky)',    v:s.mods,   l:'Mods',     accent:'var(--sky)' },
+  ];
+  const g = document.getElementById('stats-grid');
+  g.innerHTML = items.map((c, i) => `
+    <div class="stat-card" style="--stat-accent:${c.accent};animation-delay:${i*50}ms">
+      <div class="stat-top">
+        <div class="stat-icon" style="background:${c.bg};color:${c.ic}"><i class="fa-solid ${c.icon}"></i></div>
+        <div class="stat-label">${c.l}</div>
+      </div>
+      <div class="stat-value" data-to="${c.v}">0</div>
+    </div>
+  `).join('');
+  g.querySelectorAll('.stat-value').forEach(el => {
+    const t = +el.dataset.to, start = performance.now();
+    (function tick(now) {
+      const p = Math.min((now - start) / 1000, 1);
+      el.textContent = Math.round(t * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(tick);
+    })(start);
+  });
 }
-.list-view .card-top { margin-bottom: 0; flex: 0 0 auto; }
-.list-view .card-info { flex: 0 0 180px; }
-.list-view .card-roles { margin-bottom: 0; flex: 1; min-width: 0; }
-.list-view .card-joined { flex: 0 0 auto; margin-left: auto; }
-.list-view .card-bot-badge { position: static; flex-shrink: 0; }
+
+/* ===== 渲染：氛围图 ===== */
+function renderVibes(s) {
+  document.getElementById('vibe-text').innerHTML = vibeDesc(s.vibeR);
+  const bars = document.getElementById('bars');
+  const sorted = Object.entries(s.rc).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const mx = sorted[0]?.[1] || 1;
+  bars.innerHTML = sorted.map(([r, n], i) => {
+    const c = roleColor(r), pct = (n / mx * 100).toFixed(1);
+    return `<div class="bar-row">
+      <div class="bar-label" title="${r}">${r}</div>
+      <div class="bar-track"><div class="bar-fill" data-w="${pct}" style="background:${c};transition-delay:${i*60}ms"></div></div>
+      <div class="bar-num">${n}</div>
+    </div>`;
+  }).join('');
+  requestAnimationFrame(() => bars.querySelectorAll('.bar-fill').forEach(b => b.style.width = b.dataset.w + '%'));
+}
+
+/* ===== 渲染：筛选标签 ===== */
+function renderChips(s) {
+  const box = document.getElementById('chips');
+  const sorted = Object.entries(s.rc).sort((a, b) => b[1] - a[1]).slice(0, 15);
+  let h = `<button class="chip active" data-r="all" style="--chip-bg:var(--accent);--chip-shadow:var(--accent-glow)">All <span class="chip-n">${s.total}</span></button>`;
+  sorted.forEach(([r, n]) => {
+    const c = roleColor(r);
+    h += `<button class="chip" data-r="${r}" style="--chip-bg:${c};--chip-shadow:${c}33">${r} <span class="chip-n">${n}</span></button>`;
+  });
+  box.innerHTML = h;
+  box.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => {
+    box.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    ch.classList.add('active');
+    filter = ch.dataset.r;
+    renderMembers();
+  }));
+}
+
+/* ===== 过滤成员 ===== */
+function filtered() {
+  let m = DATA.members;
+  if (!botsOn) m = m.filter(x => !x.bot);
+  if (filter !== 'all') m = m.filter(x => x.roles.includes(filter));
+  if (query) {
+    const q = query.toLowerCase();
+    m = m.filter(x => x.displayName.toLowerCase().includes(q) || x.username.toLowerCase().includes(q));
+  }
+  m.sort((a, b) => new Date(b.joinedAt) - new Date(a.joinedAt));
+  return m;
+}
+
+/* ===== 渲染：成员 ===== */
+function renderMembers() {
+  const grid = document.getElementById('members-grid');
+  const list = filtered();
+  document.getElementById('rcount').textContent = list.length + ' member' + (list.length !== 1 ? 's' : '');
+  if (!list.length) { grid.innerHTML = '<div class="empty-block"><i class="fa-solid fa-ghost"></i><p>No members match your filters</p></div>'; return; }
+  grid.innerHTML = list.map((m, i) => {
+    const accent = memberAccent(m.roles);
+    const vr = visibleRoles(m.roles).slice(0, view === 'list' ? 8 : 4);
+    const rolesH = vr.map(r => `<span class="mc-role ${isColored(r)?'color':''}" style="${isColored(r)?'background:'+roleColor(r):''}">${r}</span>`).join('');
+    const init = (m.displayName || m.username || '?')[0].toUpperCase();
+    const grad = avatarGrad(m.displayName || m.username);
+    const avH = m.avatar
+      ? `<img class="mc-avatar" src="${m.avatar}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'mc-avatar-fb\\' style=\\'background:${grad}\\'>${init}</div>'">`
+      : `<div class="mc-avatar-fb" style="background:${grad}">${init}</div>`;
+    return `<div class="member-card" data-id="${m.id}" style="--card-color:${accent};animation-delay:${Math.min(i*25,500)}ms">
+      <div class="mc-head">
+        ${avH}
+        <div class="mc-info">
+          <div class="mc-name">${esc(m.displayName)}</div>
+          <div class="mc-user">@${esc(m.username)}</div>
+        </div>
+        ${m.bot ? '<span class="mc-bot-tag"><i class="fa-solid fa-robot"></i> BOT</span>' : ''}
+      </div>
+      <div class="mc-roles">${rolesH}</div>
+      <div class="mc-foot"><i class="fa-regular fa-clock"></i> ${relTime(m.joinedAt)}</div>
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.member-card').forEach(c => c.addEventListener('click', () => {
+    const m = DATA.members.find(x => x.id === c.dataset.id);
+    if (m) openModal(m);
+  }));
+}
 
 /* ===== 模态框 ===== */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px; opacity: 0; visibility: hidden;
-  transition: all 0.3s;
+function openModal(m) {
+  const ov = document.getElementById('modal-bg');
+  const box = document.getElementById('modal-box');
+  const accent = memberAccent(m.roles);
+  const init = (m.displayName || m.username || '?')[0].toUpperCase();
+  const grad = avatarGrad(m.displayName || m.username);
+  const avH = m.avatar
+    ? `<img class="modal-pfp" src="${m.avatar}" alt="" onerror="this.outerHTML='<div class=\\'modal-pfp-fb\\' style=\\'background:${grad}\\'>${init}</div>'">`
+    : `<div class="modal-pfp-fb" style="background:${grad}">${init}</div>`;
+  const vr = visibleRoles(m.roles);
+  const rolesH = vr.map(r => `<span class="mc-role ${isColored(r)?'color':''}" style="${isColored(r)?'background:'+roleColor(r):''}">${r}</span>`).join('');
+  box.innerHTML = `
+    <div class="modal-banner" style="background:linear-gradient(135deg,${accent},var(--accent),var(--gold))">
+      <button class="modal-x" id="mx"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    ${avH}
+    <div class="modal-body">
+      <div class="modal-name">${esc(m.displayName)}</div>
+      <div class="modal-user">@${esc(m.username)}</div>
+      <div class="modal-row">
+        <span class="modal-row-label">ID</span>
+        <span class="modal-row-val mono">${m.id}</span>
+        <button class="copy-btn" data-c="${m.id}"><i class="fa-regular fa-copy"></i></button>
+      </div>
+      <div class="modal-row">
+        <span class="modal-row-label">Joined</span>
+        <span class="modal-row-val">${fmtDate(m.joinedAt)} (${relTime(m.joinedAt)})</span>
+      </div>
+      <div class="modal-row">
+        <span class="modal-row-label">Type</span>
+        <span class="modal-row-val">${m.bot ? '<i class="fa-solid fa-robot"></i> Bot' : '<i class="fa-solid fa-user"></i> Human'}</span>
+      </div>
+      <div class="modal-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+        <span class="modal-row-label">Roles (${m.roles.length})</span>
+        <div class="modal-roles-wrap">${rolesH}</div>
+      </div>
+    </div>`;
+  ov.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('mx').addEventListener('click', closeModal);
+  box.querySelectorAll('.copy-btn').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(b.dataset.c).then(() => toast('Copied to clipboard')).catch(() => {
+      const t = document.createElement('textarea'); t.value = b.dataset.c;
+      document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
+      toast('Copied to clipboard');
+    });
+  }));
 }
-.modal-overlay.open { opacity: 1; visibility: visible; }
-.modal {
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 18px; padding: 32px; max-width: 480px;
-  width: 100%; position: relative;
-  transform: translateY(20px) scale(0.96);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  max-height: 90vh; overflow-y: auto;
-}
-.modal-overlay.open .modal {
-  transform: translateY(0) scale(1);
-}
-.modal-close {
-  position: absolute; top: 16px; right: 16px;
-  background: var(--card); border: 1px solid var(--border);
-  color: var(--fg-muted); width: 32px; height: 32px;
-  border-radius: 8px; cursor: pointer; font-size: 1rem;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s;
-}
-.modal-close:hover {
-  color: var(--fg); border-color: var(--accent);
-  background: var(--card-hover);
-}
-.modal-avatar {
-  width: 80px; height: 80px; border-radius: 50%;
-  object-fit: cover; margin: 0 auto 16px; display: block;
-  border: 3px solid var(--border);
-}
-.modal-avatar-fallback {
-  width: 80px; height: 80px; border-radius: 50%;
-  margin: 0 auto 16px; display: flex; align-items: center;
-  justify-content: center; font-weight: 800; font-size: 2rem;
-  color: #fff; border: 3px solid var(--border);
-}
-.modal-name {
-  text-align: center; font-size: 1.3rem; font-weight: 700;
-  margin-bottom: 4px;
-}
-.modal-username {
-  text-align: center; font-size: 0.85rem; color: var(--fg-muted);
-  font-family: var(--mono); margin-bottom: 20px;
-}
-.modal-detail {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 0; border-bottom: 1px solid var(--border);
-  font-size: 0.85rem;
-}
-.modal-detail:last-child { border-bottom: none; }
-.modal-detail-label {
-  color: var(--fg-muted); min-width: 80px; font-weight: 500;
-}
-.modal-detail-value { color: var(--fg); }
-.modal-detail-value.mono {
-  font-family: var(--mono); font-size: 0.8rem;
-  word-break: break-all;
-}
-.modal-roles { display: flex; flex-wrap: wrap; gap: 6px; }
-.modal-roles .role-badge { font-size: 0.75rem; padding: 3px 10px; }
-.copy-btn {
-  background: var(--card); border: 1px solid var(--border);
-  color: var(--fg-muted); padding: 3px 8px; border-radius: 4px;
-  cursor: pointer; font-size: 0.72rem; transition: all 0.2s;
-  font-family: var(--font);
-}
-.copy-btn:hover { color: var(--fg); border-color: var(--accent); }
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); document.body.style.overflow = ''; }
 
-/* ===== Toast 通知 ===== */
-.toast-container {
-  position: fixed; bottom: 24px; right: 24px; z-index: 300;
-  display: flex; flex-direction: column; gap: 8px;
-}
-.toast {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 12px 18px;
-  font-size: 0.85rem; color: var(--fg);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-  animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
-  display: flex; align-items: center; gap: 8px;
-}
-.toast i { color: var(--success); }
-@keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(40px); } }
-
-/* ===== 加载状态 ===== */
-.loading-state {
-  text-align: center; padding: 80px 20px; color: var(--fg-muted);
-}
-.loading-spinner {
-  width: 40px; height: 40px; border: 3px solid var(--border);
-  border-top-color: var(--accent); border-radius: 50%;
-  animation: spin 0.8s linear infinite; margin: 0 auto 16px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.error-state {
-  text-align: center; padding: 80px 20px; color: var(--fg-muted);
-}
-.error-state i { font-size: 2.5rem; color: var(--accent); margin-bottom: 12px; display: block; }
-.error-state p { margin-bottom: 8px; }
-.error-state code {
-  font-family: var(--mono); font-size: 0.78rem;
-  background: var(--card); padding: 4px 10px; border-radius: 4px;
-  color: var(--accent);
+/* ===== Toast ===== */
+function toast(msg) {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${msg}`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
 }
 
-/* ===== 空状态 ===== */
-.empty-state {
-  text-align: center; padding: 60px 20px;
-  color: var(--fg-muted); grid-column: 1 / -1;
-}
-.empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; opacity: 0.5; }
-
-/* ===== 页脚 ===== */
-footer {
-  text-align: center; padding: 32px 0;
-  border-top: 1px solid var(--border);
-  color: var(--fg-muted); font-size: 0.8rem;
-}
-footer a { color: var(--accent); }
-
-/* ===== 响应式 ===== */
-@media (max-width: 640px) {
-  .hero { padding: 48px 0 20px; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .stat-card { padding: 14px; }
-  .stat-number { font-size: 1.4rem; }
-  .members-grid { grid-template-columns: 1fr; }
-  .list-view .member-card { flex-wrap: wrap; }
-  .list-view .card-info { flex: 1 1 100%; }
-  .list-view .card-joined { margin-left: 0; }
-  .chart-label { min-width: 70px; font-size: 0.72rem; }
-  .nav-btn .kbd-hint { display: none; }
-  .modal { padding: 24px; }
-}
-
-/* ===== 减少动效偏好 ===== */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+/* ===== 随机高亮 ===== */
+function spotlight() {
+  const humans = DATA.members.filter(m => !m.bot);
+  if (!humans.length) return;
+  document.querySelectorAll('.member-card.spotlight').forEach(c => c.classList.remove('spotlight'));
+  const pick = humans[Math.floor(Math.random() * humans.length)];
+  const card = document.querySelector(`.member-card[data-id="${pick.id}"]`);
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('spotlight');
+    toast(`Spotlight: ${pick.displayName}`);
+    setTimeout(() => card.classList.remove('spotlight'), 5000);
   }
-  .bg-orbs .orb { animation: none !important; }
 }
+
+/* ===== 初始化 ===== */
+async function init() {
+  const loadEl = document.getElementById('load');
+  try {
+    const r = await fetch('members.json');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    DATA = await r.json();
+  } catch (e) {
+    loadEl.innerHTML = `<div class="err-screen"><i class="fa-solid fa-triangle-exclamation"></i><p>Failed to load member data</p><p style="margin-top:6px">Make sure <code>members.json</code> sits next to <code>index.html</code></p><p style="margin-top:8px;font-size:0.75rem;opacity:0.5">${esc(e.message)}</p></div>`;
+    return;
+  }
+  loadEl.style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  document.getElementById('nav-name').textContent = DATA.serverName;
+  const hm = DATA.members.filter(m => !m.bot).length;
+  const bt = DATA.members.filter(m => m.bot).length;
+  document.getElementById('hero-meta').innerHTML = `<span>${DATA.members.length}</span> members <span class="dot"></span> <span>${hm}</span> humans <span class="dot"></span> <span>${bt}</span> bots`;
+  document.getElementById('hero-date').textContent = 'Exported ' + fmtDate(DATA.exportedAt);
+  document.getElementById('hero-title').textContent = DATA.serverName;
+
+  const s = stats(DATA.members);
+  renderStats(s);
+  renderVibes(s);
+  renderChips(s);
+  renderMembers();
+
+  /* 搜索 */
+  const inp = document.getElementById('search');
+  let t;
+  inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { query = inp.value.trim(); renderMembers(); }, 180); });
+
+  /* Bot 切换 */
+  document.getElementById('bot-btn').addEventListener('click', function() {
+    botsOn = !botsOn;
+    this.innerHTML = botsOn
+      ? '<i class="fa-solid fa-robot"></i> <span class="hide-sm">Bots On</span>'
+      : '<i class="fa-solid fa-robot"></i> <span class="hide-sm">Bots Off</span>';
+    this.classList.toggle('active', botsOn);
+    renderMembers();
+  });
+
+  /* 视图切换 */
+  document.getElementById('view-btn').addEventListener('click', function() {
+    view = view === 'grid' ? 'list' : 'grid';
+    document.getElementById('members-grid').classList.toggle('list-view', view === 'list');
+    this.innerHTML = view === 'grid' ? '<i class="fa-solid fa-list"></i>' : '<i class="fa-solid fa-grip"></i>';
+    renderMembers();
+  });
+
+  /* 随机 */
+  document.getElementById('rand-btn').addEventListener('click', spotlight);
+
+  /* 模态外部点击关闭 */
+  document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+  /* 快捷键 */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); inp.focus(); }
+    if (e.key === 'r' && document.activeElement.tagName !== 'INPUT' && !document.getElementById('modal-bg').classList.contains('open')) spotlight();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
