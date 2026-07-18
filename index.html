@@ -1,158 +1,111 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Community Command Center</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-<link rel="stylesheet" href="style.css">
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unison Community Dashboard</title>
+  <meta name="description" content="Live member dashboard for the Unison Community Discord server">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔗</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<div id="loader">
-    <div class="loader-box">
-        <div class="spinner"></div>
-        <h2>Loading Community Dashboard</h2>
-        <p>Fetching analytics...</p>
-    </div>
-</div>
+  <!-- 动态背景光斑 -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
 
-<header class="topbar">
-
-    <div class="brand">
-        <h1>Community Command Center</h1>
-        <span id="serverName">Loading...</span>
-    </div>
-
-    <div class="actions">
-        <button id="themeToggle">
-            🌙 Theme
+  <!-- 导航栏 -->
+  <nav>
+    <div class="container">
+      <div class="nav-logo">
+        <div class="logo-icon">U</div>
+        <span id="server-name">Loading...</span>
+      </div>
+      <div class="nav-actions">
+        <button class="nav-btn" id="bot-toggle" title="Toggle bot visibility">
+          <i class="fa-solid fa-robot"></i> Bots On
         </button>
-    </div>
-
-</header>
-
-<main>
-
-<section class="hero-grid">
-
-    <div class="metric-card">
-        <span>Total Members</span>
-        <h2 id="memberCount">0</h2>
-    </div>
-
-    <div class="metric-card">
-        <span>Human Members</span>
-        <h2 id="humanCount">0</h2>
-    </div>
-
-    <div class="metric-card">
-        <span>Bots</span>
-        <h2 id="botCount">0</h2>
-    </div>
-
-    <div class="metric-card">
-        <span>Total Roles</span>
-        <h2 id="roleCount">0</h2>
-    </div>
-
-</section>
-
-<section class="dashboard-grid">
-
-    <div class="panel">
-        <div class="panel-header">
-            <h2>Role Distribution</h2>
-        </div>
-
-        <canvas id="roleChart"></canvas>
-    </div>
-
-    <div class="panel">
-
-        <div class="panel-header">
-            <h2>Community Insights</h2>
-        </div>
-
-        <div class="insight-list">
-
-            <div class="insight-item">
-                <span>Newest Member</span>
-                <strong id="newestMember">-</strong>
-            </div>
-
-            <div class="insight-item">
-                <span>Most Popular Role</span>
-                <strong id="topRole">-</strong>
-            </div>
-
-            <div class="insight-item">
-                <span>Export Date</span>
-                <strong id="exportDate">-</strong>
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-<section class="controls">
-
-    <input
-        type="text"
-        id="searchInput"
-        placeholder="Search members..."
-    >
-
-    <select id="roleFilter">
-        <option value="">All Roles</option>
-    </select>
-
-</section>
-
-<section class="directory-section">
-
-    <div class="section-header">
-
-        <h2>Members Directory</h2>
-
-        <span id="visibleCount">
-            0 Members
-        </span>
-
-    </div>
-
-    <div id="memberGrid"></div>
-
-</section>
-
-</main>
-
-<div id="memberModal" class="modal">
-
-    <div class="modal-content">
-
-        <button id="closeModal" class="close-btn">
-            ×
+        <button class="nav-btn" id="view-toggle" title="Switch to list view">
+          <i class="fa-solid fa-list"></i>
         </button>
-
-        <div id="modalBody"></div>
-
+        <button class="nav-btn accent-btn" id="random-btn" title="Random member (R)">
+          <i class="fa-solid fa-dice"></i> Random
+        </button>
+      </div>
     </div>
+  </nav>
 
-</div>
+  <!-- 加载状态 -->
+  <div class="container" id="loading-state">
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading community data...</p>
+    </div>
+  </div>
 
-<script src="script.js"></script>
+  <!-- 主应用（初始隐藏） -->
+  <div class="container" id="app" style="display:none">
 
+    <!-- 英雄区 -->
+    <header class="hero">
+      <div class="hero-badge">
+        <i class="fa-solid fa-circle"></i> Discord Server Dashboard
+      </div>
+      <h1 id="server-name-hero">Unison Community</h1>
+      <p class="hero-sub" id="hero-count">Loading...</p>
+      <p style="color:var(--fg-muted);font-size:0.78rem;margin-top:10px" id="export-date"></p>
+    </header>
+
+    <!-- 统计卡片 -->
+    <section class="stats-grid" id="stats-grid" aria-label="Server statistics"></section>
+
+    <!-- 社区氛围图 -->
+    <section class="vibes-section" aria-label="Community vibes">
+      <div class="section-header">
+        <h2 class="section-title">Community Vibes</h2>
+      </div>
+      <div class="vibe-desc" id="vibe-desc"></div>
+      <div class="chart-bars" id="chart-bars"></div>
+    </section>
+
+    <!-- 控制区 -->
+    <section class="controls" aria-label="Member filters">
+      <div class="controls-top">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="search-input" placeholder="Search by name or username..." aria-label="Search members">
+        </div>
+        <span class="results-info" id="results-info"></span>
+      </div>
+      <div class="filter-chips" id="filter-chips" role="tablist" aria-label="Filter by role"></div>
+    </section>
+
+    <!-- 成员网格 -->
+    <main class="members-grid" id="members-grid" aria-label="Member list"></main>
+  </div>
+
+  <!-- 模态框 -->
+  <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-label="Member details">
+    <div class="modal" id="modal-content"></div>
+  </div>
+
+  <!-- Toast 容器 -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- 页脚 -->
+  <footer>
+    <div class="container">
+      <p>Unison Community Dashboard &middot; Data auto-loaded from <code>members.json</code></p>
+      <p style="margin-top:4px;opacity:0.6">Press <kbd style="background:var(--card);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:0.75rem">/</kbd> to search &middot; <kbd style="background:var(--card);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:0.75rem">R</kbd> for random &middot; <kbd style="background:var(--card);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:0.75rem">Esc</kbd> to close</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
