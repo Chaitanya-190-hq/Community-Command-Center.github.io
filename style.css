@@ -1,0 +1,182 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#050816;
+    color:white;
+    font-family:'Orbitron',sans-serif;
+    min-height:100vh;
+    overflow-x:hidden;
+}
+
+.background{
+    position:fixed;
+    inset:0;
+
+    background:
+    radial-gradient(circle at 20% 20%,#00ffff33,transparent 30%),
+    radial-gradient(circle at 80% 80%,#ff00ff33,transparent 30%);
+
+    z-index:-1;
+}
+
+header{
+    padding:40px;
+    text-align:center;
+}
+
+h1{
+    color:#00ffff;
+    margin-bottom:30px;
+}
+
+.stats{
+    display:flex;
+    justify-content:center;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+.card{
+    width:220px;
+
+    background:rgba(255,255,255,.05);
+
+    border:1px solid rgba(0,255,255,.3);
+
+    backdrop-filter:blur(10px);
+
+    border-radius:20px;
+
+    padding:20px;
+
+    box-shadow:0 0 20px rgba(0,255,255,.15);
+}
+
+.card h2{
+    color:#00ffff;
+}
+
+.search-section{
+    text-align:center;
+    margin:30px;
+}
+
+#searchInput{
+    width:80%;
+    max-width:600px;
+
+    padding:15px;
+
+    border:none;
+
+    border-radius:15px;
+
+    background:#111827;
+
+    color:white;
+
+    font-size:16px;
+}
+
+.controls{
+    text-align:center;
+}
+
+button{
+    background:#00ffff;
+    color:black;
+
+    border:none;
+
+    border-radius:15px;
+
+    padding:14px 24px;
+
+    cursor:pointer;
+
+    font-weight:bold;
+
+    transition:.3s;
+}
+
+button:hover{
+    transform:scale(1.05);
+}
+
+#randomCitizen{
+    text-align:center;
+    margin:25px;
+    font-size:20px;
+    color:#00ffff;
+}
+
+section h2{
+    text-align:center;
+    margin:40px 0 20px;
+}
+
+#memberGrid{
+
+    display:grid;
+
+    grid-template-columns:
+    repeat(auto-fill,minmax(250px,1fr));
+
+    gap:20px;
+
+    padding:30px;
+}
+
+.member-card{
+
+    background:rgba(255,255,255,.05);
+
+    border:1px solid rgba(255,255,255,.1);
+
+    border-radius:20px;
+
+    padding:20px;
+
+    transition:.3s;
+}
+
+.member-card:hover{
+
+    transform:translateY(-8px);
+
+    box-shadow:0 0 25px #00ffff;
+}
+
+.avatar{
+
+    width:80px;
+    height:80px;
+
+    border-radius:50%;
+
+    display:block;
+
+    margin:auto;
+    margin-bottom:15px;
+
+    border:2px solid cyan;
+}
+
+.role{
+
+    color:#00ffff;
+    margin-top:10px;
+}
+
+@media(max-width:768px){
+
+    .stats{
+        flex-direction:column;
+        align-items:center;
+    }
+
+}
