@@ -1,124 +1,214 @@
 let allMembers = [];
 
-async function loadData() {
+window.addEventListener("load", () => {
 
-    const response =
-        await fetch("members.json");
+setTimeout(() => {
+document.getElementById("loader").style.display = "none";
+}, 800);
 
-    const data =
-        await response.json();
+loadData();
 
-    document.getElementById("memberCount")
-        .textContent = data.memberCount;
+});
 
-    document.getElementById("serverName")
-        .textContent = data.serverName;
+async function loadData(){
 
-    const roles = new Set();
+const response = await fetch("members.json");
+const data = await response.json();
 
-    data.members.forEach(member => {
+allMembers = data.members;
 
-        if(member.roles){
+animateCounter("memberCount", data.memberCount);
 
-            member.roles.forEach(role =>
-                roles.add(role)
-            );
+document.getElementById("serverName")
+.textContent = data.serverName;
 
-        }
+const roles = new Set();
+let botCount = 0;
+const roleStats = {};
 
-    });
+data.members.forEach(member => {
 
-    document.getElementById("roleCount")
-        .textContent = roles.size;
+if(member.bot) botCount++;
 
-    allMembers = data.members;
+(member.roles || []).forEach(role => {
 
-    renderMembers(allMembers);
+roles.add(role);
+
+roleStats[role] = (roleStats[role] || 0) + 1;
+
+});
+
+});
+
+animateCounter("roleCount", roles.size);
+animateCounter("botCount", botCount);
+
+renderRoleStats(roleStats);
+renderMembers(allMembers);
+
+}
+
+function animateCounter(id,target){
+
+let current=0;
+
+const step=Math.max(
+1,
+Math.ceil(target/50)
+);
+
+const interval=setInterval(()=>{
+
+current+=step;
+
+if(current>=target){
+
+current=target;
+clearInterval(interval);
+
+}
+
+document.getElementById(id)
+.textContent=current;
+
+},20);
+
+}
+
+function renderRoleStats(stats){
+
+const container =
+document.getElementById("roleStats");
+
+const sorted = Object.entries(stats)
+.sort((a,b)=>b[1]-a[1])
+.slice(0,10);
+
+container.innerHTML = sorted.map(role=>`
+
+<div class="role-item">
+<span>${role[0]}</span>
+<strong>${role[1]}</strong>
+</div>
+
+`).join("");
+
 }
 
 function renderMembers(members){
 
-    const grid =
-        document.getElementById("memberGrid");
+const grid =
+document.getElementById("memberGrid");
 
-    grid.innerHTML = "";
+grid.innerHTML = "";
 
-    members.forEach(member => {
+members.forEach(member=>{
 
-        const card =
-            document.createElement("div");
+const card =
+document.createElement("div");
 
-        card.className =
-            "member-card";
+card.className =
+"member-card";
 
-        card.innerHTML = `
+card.innerHTML = `
+<img
+class="avatar"
+src="${member.avatar}"
+onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"
+>
 
-            <img
-                class="avatar"
-                src="${member.avatar}"
-                onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"
-            >
+<div class="member-name">
+${member.displayName}
+</div>
 
-            <h3>${member.displayName}</h3>
+<div class="member-role">
+${member.roles?.join(", ") || "No Roles"}
+</div>
+`;
 
-            <p>${member.username}</p>
+card.onclick =
+()=>openModal(member);
 
-            <div class="role">
-                ${member.roles?.join(", ") || "No Roles"}
-            </div>
+grid.appendChild(card);
 
-        `;
+});
 
-        grid.appendChild(card);
-
-    });
 }
 
 function summonCitizen(){
 
-    const random =
-        allMembers[
-            Math.floor(
-                Math.random() *
-                allMembers.length
-            )
-        ];
-
-    document.getElementById(
-        "randomCitizen"
-    ).innerHTML = `
-
-        ⚡ TARGET ACQUIRED<br><br>
-
-        ${random.displayName}
-
-    `;
-}
+const member =
+allMembers[
+Math.floor(
+Math.random()*allMembers.length
+)
+];
 
 document.getElementById(
-    "searchInput"
-).addEventListener("input", e => {
+"randomCitizen"
+).innerHTML =
+`${member.displayName}`;
 
-    const value =
-        e.target.value.toLowerCase();
+}
 
-    const filtered =
-        allMembers.filter(member =>
+function openModal(member){
 
-            member.displayName
-                ?.toLowerCase()
-                .includes(value)
+document.getElementById(
+"memberModal"
+).style.display="flex";
 
-            ||
+document.getElementById(
+"modalBody"
+).innerHTML =
 
-            member.username
-                ?.toLowerCase()
-                .includes(value)
+`
+<img class="avatar" src="${member.avatar}">
 
-        );
+<h2>${member.displayName}</h2>
 
-    renderMembers(filtered);
+<p><strong>Username:</strong> ${member.username}</p>
+
+<p><strong>Roles:</strong>
+${member.roles?.join(", ") || "No Roles"}
+</p>
+
+<p><strong>Bot:</strong>
+${member.bot ? "Yes" : "No"}
+</p>
+`;
+
+}
+
+function closeModal(){
+
+document.getElementById(
+"memberModal"
+).style.display="none";
+
+}
+
+document
+.getElementById("searchInput")
+.addEventListener("input", e => {
+
+const value =
+e.target.value.toLowerCase();
+
+const filtered =
+allMembers.filter(member =>
+
+(member.displayName || "")
+.toLowerCase()
+.includes(value)
+
+||
+
+(member.username || "")
+.toLowerCase()
+.includes(value)
+
+);
+
+renderMembers(filtered);
 
 });
-
-loadData();
