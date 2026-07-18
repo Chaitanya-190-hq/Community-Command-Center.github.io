@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Command Center</title>
+
+<link rel="stylesheet" href="style.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="background"></div>
+
+<header>
+
+    <h1>🚀 Community Command Center</h1>
+
+    <div class="stats">
+
+        <div class="card">
+            <h2 id="memberCount">0</h2>
+            <p>Members</p>
+        </div>
+
+        <div class="card">
+            <h2 id="roleCount">0</h2>
+            <p>Roles</p>
+        </div>
+
+        <div class="card">
+            <h2 id="serverName">Loading...</h2>
+            <p>Server</p>
+        </div>
+
+    </div>
+
+</header>
+
+<section class="search-section">
+
+    <input
+        type="text"
+        id="searchInput"
+        placeholder="🔍 Search Citizens..."
+    >
+
+</section>
+
+<section class="controls">
+
+    <button onclick="summonCitizen()">
+        ⚡ Random Citizen
+    </button>
+
+</section>
+
+<div id="randomCitizen"></div>
+
+<section>
+
+    <h2>👥 Citizens Database</h2>
+
+    <div id="memberGrid"></div>
+
+</section>
+
+<script src="script.js"></script>
+
+</body>
+</html>
