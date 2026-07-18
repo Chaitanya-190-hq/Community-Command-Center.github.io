@@ -7,65 +7,103 @@
 
 <link rel="stylesheet" href="style.css">
 
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-<div class="background"></div>
-
-<header>
-
-    <h1>🚀 Community Command Center</h1>
-
-    <div class="stats">
-
-        <div class="card">
-            <h2 id="memberCount">0</h2>
-            <p>Members</p>
-        </div>
-
-        <div class="card">
-            <h2 id="roleCount">0</h2>
-            <p>Roles</p>
-        </div>
-
-        <div class="card">
-            <h2 id="serverName">Loading...</h2>
-            <p>Server</p>
-        </div>
-
+<div id="loader">
+    <div class="loader-content">
+        <h1>Community Command Center</h1>
+        <p>Loading dashboard...</p>
     </div>
+</div>
 
+<header class="topbar">
+    <div>
+        <h1>Community Command Center</h1>
+        <p>Discord Community Analytics Dashboard</p>
+    </div>
 </header>
 
-<section class="search-section">
+<main>
+
+<section class="hero">
+
+    <div class="stat-card">
+        <h2 id="memberCount">0</h2>
+        <p>Total Members</p>
+    </div>
+
+    <div class="stat-card">
+        <h2 id="roleCount">0</h2>
+        <p>Total Roles</p>
+    </div>
+
+    <div class="stat-card">
+        <h2 id="botCount">0</h2>
+        <p>Bots</p>
+    </div>
+
+    <div class="stat-card">
+        <h2 id="serverName">Loading...</h2>
+        <p>Server</p>
+    </div>
+
+</section>
+
+<section class="analytics">
+
+    <div class="panel">
+        <h2>Role Analytics</h2>
+        <div id="roleStats"></div>
+    </div>
+
+    <div class="panel">
+        <h2>Random Member</h2>
+
+        <button onclick="summonCitizen()">
+            Pick Random Member
+        </button>
+
+        <div id="randomCitizen"></div>
+    </div>
+
+</section>
+
+<section class="search-panel">
 
     <input
-        type="text"
         id="searchInput"
-        placeholder="🔍 Search Citizens..."
+        type="text"
+        placeholder="Search members..."
     >
 
 </section>
 
-<section class="controls">
-
-    <button onclick="summonCitizen()">
-        ⚡ Random Citizen
-    </button>
-
-</section>
-
-<div id="randomCitizen"></div>
-
 <section>
 
-    <h2>👥 Citizens Database</h2>
+    <h2 class="section-title">Members Directory</h2>
 
     <div id="memberGrid"></div>
 
 </section>
+
+</main>
+
+<div id="memberModal" class="modal">
+
+    <div class="modal-content">
+
+        <span class="close-btn" onclick="closeModal()">
+            ×
+        </span>
+
+        <div id="modalBody"></div>
+
+    </div>
+
+</div>
 
 <script src="script.js"></script>
 
