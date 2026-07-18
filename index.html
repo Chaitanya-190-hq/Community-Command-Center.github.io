@@ -3,87 +3,134 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Community Command Center</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
 <div id="loader">
-    <div class="loader-content">
-        <h1>Community Command Center</h1>
-        <p>Loading dashboard...</p>
+    <div class="loader-box">
+        <div class="spinner"></div>
+        <h2>Loading Community Dashboard</h2>
+        <p>Fetching analytics...</p>
     </div>
 </div>
 
 <header class="topbar">
-    <div>
+
+    <div class="brand">
         <h1>Community Command Center</h1>
-        <p>Discord Community Analytics Dashboard</p>
+        <span id="serverName">Loading...</span>
     </div>
+
+    <div class="actions">
+        <button id="themeToggle">
+            🌙 Theme
+        </button>
+    </div>
+
 </header>
 
 <main>
 
-<section class="hero">
+<section class="hero-grid">
 
-    <div class="stat-card">
+    <div class="metric-card">
+        <span>Total Members</span>
         <h2 id="memberCount">0</h2>
-        <p>Total Members</p>
     </div>
 
-    <div class="stat-card">
-        <h2 id="roleCount">0</h2>
-        <p>Total Roles</p>
+    <div class="metric-card">
+        <span>Human Members</span>
+        <h2 id="humanCount">0</h2>
     </div>
 
-    <div class="stat-card">
+    <div class="metric-card">
+        <span>Bots</span>
         <h2 id="botCount">0</h2>
-        <p>Bots</p>
     </div>
 
-    <div class="stat-card">
-        <h2 id="serverName">Loading...</h2>
-        <p>Server</p>
-    </div>
-
-</section>
-
-<section class="analytics">
-
-    <div class="panel">
-        <h2>Role Analytics</h2>
-        <div id="roleStats"></div>
-    </div>
-
-    <div class="panel">
-        <h2>Random Member</h2>
-
-        <button onclick="summonCitizen()">
-            Pick Random Member
-        </button>
-
-        <div id="randomCitizen"></div>
+    <div class="metric-card">
+        <span>Total Roles</span>
+        <h2 id="roleCount">0</h2>
     </div>
 
 </section>
 
-<section class="search-panel">
+<section class="dashboard-grid">
+
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Role Distribution</h2>
+        </div>
+
+        <canvas id="roleChart"></canvas>
+    </div>
+
+    <div class="panel">
+
+        <div class="panel-header">
+            <h2>Community Insights</h2>
+        </div>
+
+        <div class="insight-list">
+
+            <div class="insight-item">
+                <span>Newest Member</span>
+                <strong id="newestMember">-</strong>
+            </div>
+
+            <div class="insight-item">
+                <span>Most Popular Role</span>
+                <strong id="topRole">-</strong>
+            </div>
+
+            <div class="insight-item">
+                <span>Export Date</span>
+                <strong id="exportDate">-</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<section class="controls">
 
     <input
-        id="searchInput"
         type="text"
+        id="searchInput"
         placeholder="Search members..."
     >
 
+    <select id="roleFilter">
+        <option value="">All Roles</option>
+    </select>
+
 </section>
 
-<section>
+<section class="directory-section">
 
-    <h2 class="section-title">Members Directory</h2>
+    <div class="section-header">
+
+        <h2>Members Directory</h2>
+
+        <span id="visibleCount">
+            0 Members
+        </span>
+
+    </div>
 
     <div id="memberGrid"></div>
 
@@ -95,9 +142,9 @@
 
     <div class="modal-content">
 
-        <span class="close-btn" onclick="closeModal()">
+        <button id="closeModal" class="close-btn">
             ×
-        </span>
+        </button>
 
         <div id="modalBody"></div>
 
