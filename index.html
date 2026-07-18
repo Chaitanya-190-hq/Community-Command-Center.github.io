@@ -12,97 +12,96 @@
 </head>
 <body>
 
-  <!-- 动态背景光斑 -->
-  <div class="bg-orbs" aria-hidden="true">
+  <!-- 背景 -->
+  <div class="bg-layer" aria-hidden="true">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
-    <div class="orb orb-4"></div>
   </div>
 
-  <!-- 导航栏 -->
+  <!-- 导航 -->
   <nav>
     <div class="container">
       <div class="nav-logo">
-        <div class="logo-icon">U</div>
-        <span id="server-name">Loading...</span>
+        <div class="logo-mark">U</div>
+        <span id="nav-name">Loading...</span>
       </div>
       <div class="nav-actions">
-        <button class="nav-btn" id="bot-toggle" title="Toggle bot visibility">
-          <i class="fa-solid fa-robot"></i> Bots On
+        <button class="nav-btn active" id="bot-btn" title="Toggle bots">
+          <i class="fa-solid fa-robot"></i> <span class="hide-sm">Bots On</span>
         </button>
-        <button class="nav-btn" id="view-toggle" title="Switch to list view">
+        <button class="nav-btn" id="view-btn" title="Toggle view">
           <i class="fa-solid fa-list"></i>
         </button>
-        <button class="nav-btn accent-btn" id="random-btn" title="Random member (R)">
-          <i class="fa-solid fa-dice"></i> Random
+        <button class="nav-btn primary" id="rand-btn" title="Random member (R)">
+          <i class="fa-solid fa-shuffle"></i> <span class="hide-sm">Random</span>
         </button>
       </div>
     </div>
   </nav>
 
-  <!-- 加载状态 -->
-  <div class="container" id="loading-state">
-    <div class="loading-state">
-      <div class="loading-spinner"></div>
+  <!-- 加载 -->
+  <div class="container" id="load">
+    <div class="load-screen">
+      <div class="load-spin"></div>
       <p>Loading community data...</p>
     </div>
   </div>
 
-  <!-- 主应用（初始隐藏） -->
+  <!-- 主体 -->
   <div class="container" id="app" style="display:none">
 
-    <!-- 英雄区 -->
     <header class="hero">
-      <div class="hero-badge">
-        <i class="fa-solid fa-circle"></i> Discord Server Dashboard
-      </div>
-      <h1 id="server-name-hero">Unison Community</h1>
-      <p class="hero-sub" id="hero-count">Loading...</p>
-      <p style="color:var(--fg-muted);font-size:0.78rem;margin-top:10px" id="export-date"></p>
+      <div class="hero-eyebrow">Discord Server</div>
+      <h1 id="hero-title">Unison Community</h1>
+      <p class="hero-meta" id="hero-meta">Loading...</p>
+      <p class="hero-date" id="hero-date"></p>
     </header>
 
-    <!-- 统计卡片 -->
-    <section class="stats-grid" id="stats-grid" aria-label="Server statistics"></section>
+    <section class="stats-row" id="stats-grid" aria-label="Statistics"></section>
 
-    <!-- 社区氛围图 -->
-    <section class="vibes-section" aria-label="Community vibes">
-      <div class="section-header">
+    <section class="section-block" aria-label="Community vibes">
+      <div class="section-head">
         <h2 class="section-title">Community Vibes</h2>
+        <span class="section-badge">Live</span>
       </div>
-      <div class="vibe-desc" id="vibe-desc"></div>
-      <div class="chart-bars" id="chart-bars"></div>
+      <div class="vibe-card" id="vibe-text"></div>
+      <div class="bar-chart" id="bars"></div>
     </section>
 
-    <!-- 控制区 -->
-    <section class="controls" aria-label="Member filters">
-      <div class="controls-top">
-        <div class="search-box">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" id="search-input" placeholder="Search by name or username..." aria-label="Search members">
+    <section class="section-block" aria-label="Members">
+      <div class="section-head">
+        <h2 class="section-title">Members</h2>
+      </div>
+      <div class="controls">
+        <div class="controls-row">
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search" placeholder="Search by name or username..." aria-label="Search members">
+          </div>
+          <span class="result-count" id="rcount"></span>
         </div>
-        <span class="results-info" id="results-info"></span>
+        <div class="chip-row" id="chips" role="tablist" aria-label="Filter by role"></div>
       </div>
-      <div class="filter-chips" id="filter-chips" role="tablist" aria-label="Filter by role"></div>
+      <main class="members-grid" id="members-grid" aria-label="Member list"></main>
     </section>
 
-    <!-- 成员网格 -->
-    <main class="members-grid" id="members-grid" aria-label="Member list"></main>
   </div>
 
   <!-- 模态框 -->
-  <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-label="Member details">
-    <div class="modal" id="modal-content"></div>
+  <div class="modal-bg" id="modal-bg" role="dialog" aria-modal="true">
+    <div class="modal-box" id="modal-box"></div>
   </div>
 
-  <!-- Toast 容器 -->
-  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+  <!-- Toast -->
+  <div class="toast-area" id="toasts" aria-live="polite"></div>
 
-  <!-- 页脚 -->
   <footer>
     <div class="container">
-      <p>Unison Community Dashboard &middot; Data auto-loaded from <code>members.json</code></p>
-      <p style="margin-top:4px;opacity:0.6">Press <kbd style="background:var(--card);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:0.75rem">/</kbd> to search &middot; <kbd style="background:var(--card);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:0.75rem">R</kbd> for random &middot; <kbd style="background:var(--card);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:0.75rem">Esc</kbd> to close</p>
+      <p>Unison Community Dashboard &middot; Auto-loads from <code>members.json</code></p>
+      <p style="margin-top:4px;opacity:0.5">
+        <kbd>/</kbd> search &middot; <kbd>R</kbd> random &middot; <kbd>Esc</kbd> close
+      </p>
     </div>
   </footer>
 
