@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Unison Community Dashboard</title>
+    <script>
+      // GitHub Pages 404 -> index.html fallback for SPA deep links.
+      // Mirrors the segment-to-query conversion done in index.html.
+      var pathSegments = window.location.pathname.split('/').filter(Boolean);
+      var repo = pathSegments[0] || '';
+      var rest = pathSegments.slice(1).join('/');
+      var query = rest ? ('?p=' + encodeURIComponent(rest)) : '';
+      window.location.replace('/' + repo + '/' + query);
+    </script>
+    <style>body{font-family:sans-serif;text-align:center;padding:40px;color:#555}</style>
+  </head>
+  <body>Redirecting…</body>
+</html>
