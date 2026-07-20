@@ -1,5 +1,3 @@
-import { supabase } from './supabaseClient.js';
-
 /* ===== Role colors & config ===== */
 const ROLE_COLORS = {
   'Admin':          '#FF4D6D',
@@ -50,12 +48,9 @@ let filter = 'all';
 let query = '';
 let botsOn = true;
 let view = 'grid';
-let adminQuery = '';
 
 /* ===== Utils ===== */
-function isZalgo(s) {
-  return /[\u0300-\u036F\u0483-\u0489\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]/u.test(s || '');
-}
+const isZalgo = s => /[\u0300-\u036F\u0483-\u0489\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]/u.test(s || '');
 function relTime(d) {
   const s = Math.floor((Date.now() - new Date(d)) / 1000);
   if (s < 60) return 'just now';
@@ -69,36 +64,27 @@ function relTime(d) {
   if (mo < 12) return mo + 'mo ago';
   return Math.floor(mo / 12) + 'y ago';
 }
-function fmtDate(d) {
-  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
+const fmtDate = d => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
-function roleColor(r) { return ROLE_COLORS[r] || '#6B7280'; }
-function isColored(r) { return r in ROLE_COLORS; }
+const roleColor = r => ROLE_COLORS[r] || '#6B7280';
+const isColored = r => r in ROLE_COLORS;
 function memberAccent(roles) {
-  for (const r of roles) {
-    if (ROLE_COLORS[r] && !HIDDEN_ROLES.has(r) && r !== 'BOT') return ROLE_COLORS[r];
-  }
-  return 'var(--border-light)';
+  for (const r of roles) if (ROLE_COLORS[r] && !HIDDEN_ROLES.has(r) && r !== 'BOT') return ROLE_COLORS[r];
+  return '#5A6580';
 }
-function visibleRoles(roles) {
-  return (roles || []).filter(r => !HIDDEN_ROLES.has(r) && !isZalgo(r));
-}
+const visibleRoles = roles => (roles || []).filter(r => !HIDDEN_ROLES.has(r) && !isZalgo(r));
 function avatarGrad(name) {
   let h = 0;
   for (let i = 0; i < (name || '').length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
   return GRADS[Math.abs(h) % GRADS.length];
 }
-function initials(name) {
-  return (name || '?').trim().charAt(0).toUpperCase() || '?';
-}
+const initials = name => (name || '?').trim().charAt(0).toUpperCase() || '?';
 
 /* ===== Stats ===== */
 function computeStats(members) {
   const humans = members.filter(m => !m.bot);
   const allR = new Set();
   members.forEach(m => (m.roles || []).forEach(r => allR.add(r)));
-
   const rc = {};
   members.forEach(m => (m.roles || []).forEach(r => {
     if (!HIDDEN_ROLES.has(r) && !isZalgo(r)) rc[r] = (rc[r] || 0) + 1;
@@ -108,7 +94,6 @@ function computeStats(members) {
     if (!HIDDEN_ROLES.has(r) && !isZalgo(r) && !PRONOUN_ROLES.has(r) && r !== 'BOT')
       vibeR[r] = (vibeR[r] || 0) + 1;
   }));
-
   return {
     total: members.length,
     humans: humans.length,
@@ -119,7 +104,6 @@ function computeStats(members) {
     rc, vibeR,
   };
 }
-
 function vibeDesc(vibeR) {
   const sorted = Object.entries(vibeR).sort((a, b) => b[1] - a[1]);
   if (sorted.length < 2) return 'A growing community finding its identity.';
@@ -148,7 +132,7 @@ function renderStats(s) {
   ];
   const g = document.getElementById('stats-grid');
   g.innerHTML = items.map((c, i) => `
-    <div class="stat-card" style="--stat-accent:${c.a};animation-delay:${i * 60}ms">
+    <div class="stat-card reveal" style="--stat-accent:${c.a};transition-delay:${i * 60}ms">
       <div class="stat-top">
         <div class="stat-icon" style="background:${c.bg};color:${c.ic}"><i class="fa-solid ${c.icon}"></i></div>
         <div class="stat-label">${c.l}</div>
@@ -210,11 +194,11 @@ function filtered() {
   if (query) {
     const q = query.toLowerCase();
     m = m.filter(x =>
-      (x.display_name || '').toLowerCase().includes(q) ||
+      (x.displayName || '').toLowerCase().includes(q) ||
       (x.username || '').toLowerCase().includes(q)
     );
   }
-  return [...m].sort((a, b) => new Date(b.joined_at) - new Date(a.joined_at));
+  return [...m].sort((a, b) => new Date(b.joinedAt) - new Date(a.joinedAt));
 }
 
 function renderMembers() {
@@ -229,22 +213,22 @@ function renderMembers() {
     const accent = memberAccent(m.roles || []);
     const vr = visibleRoles(m.roles).slice(0, view === 'list' ? 8 : 4);
     const rolesH = vr.map(r => `<span class="mc-role ${isColored(r) ? 'color' : ''}" style="${isColored(r) ? 'background:' + roleColor(r) : ''}">${esc(r)}</span>`).join('');
-    const init = initials(m.display_name || m.username);
-    const grad = avatarGrad(m.display_name || m.username);
+    const init = initials(m.displayName || m.username);
+    const grad = avatarGrad(m.displayName || m.username);
     const avH = m.avatar
       ? `<img class="mc-avatar" src="${esc(m.avatar)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'mc-avatar-fb\\' style=\\'background:${grad}\\'>${init}</div>'">`
       : `<div class="mc-avatar-fb" style="background:${grad}">${init}</div>`;
-    return `<div class="member-card" data-id="${esc(m.id)}" style="--card-color:${accent};animation-delay:${Math.min(i * 25, 500)}ms">
+    return `<div class="member-card" data-id="${esc(m.id)}" style="--card-color:${accent};animation-delay:${Math.min(i * 22, 500)}ms">
       <div class="mc-head">
         ${avH}
         <div class="mc-info">
-          <div class="mc-name">${esc(m.display_name)}</div>
+          <div class="mc-name">${esc(m.displayName)}</div>
           <div class="mc-user">@${esc(m.username)}</div>
         </div>
         ${m.bot ? '<span class="mc-bot-tag"><i class="fa-solid fa-robot"></i> BOT</span>' : ''}
       </div>
       <div class="mc-roles">${rolesH}</div>
-      <div class="mc-foot"><i class="fa-regular fa-clock"></i> ${relTime(m.joined_at)}</div>
+      <div class="mc-foot"><i class="fa-regular fa-clock"></i> ${relTime(m.joinedAt)}</div>
     </div>`;
   }).join('');
   grid.querySelectorAll('.member-card').forEach(c => c.addEventListener('click', () => {
@@ -258,8 +242,8 @@ function openModal(m) {
   const ov = document.getElementById('modal-bg');
   const box = document.getElementById('modal-box');
   const accent = memberAccent(m.roles || []);
-  const init = initials(m.display_name || m.username);
-  const grad = avatarGrad(m.display_name || m.username);
+  const init = initials(m.displayName || m.username);
+  const grad = avatarGrad(m.displayName || m.username);
   const avH = m.avatar
     ? `<img class="modal-pfp" src="${esc(m.avatar)}" alt="" onerror="this.outerHTML='<div class=\\'modal-pfp-fb\\' style=\\'background:${grad}\\'>${init}</div>'">`
     : `<div class="modal-pfp-fb" style="background:${grad}">${init}</div>`;
@@ -271,7 +255,7 @@ function openModal(m) {
     </div>
     ${avH}
     <div class="modal-body">
-      <div class="modal-name">${esc(m.display_name)}</div>
+      <div class="modal-name">${esc(m.displayName)}</div>
       <div class="modal-user">@${esc(m.username)}</div>
       <div class="modal-row">
         <span class="modal-row-label">ID</span>
@@ -280,7 +264,7 @@ function openModal(m) {
       </div>
       <div class="modal-row">
         <span class="modal-row-label">Joined</span>
-        <span class="modal-row-val">${fmtDate(m.joined_at)} (${relTime(m.joined_at)})</span>
+        <span class="modal-row-val">${fmtDate(m.joinedAt)} (${relTime(m.joinedAt)})</span>
       </div>
       <div class="modal-row">
         <span class="modal-row-label">Type</span>
@@ -297,7 +281,7 @@ function openModal(m) {
   box.querySelectorAll('.copy-btn').forEach(b => b.addEventListener('click', e => {
     e.stopPropagation();
     const text = b.dataset.c;
-    navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard')).catch(() => {
+    navigator.clipboard?.writeText(text).then(() => toast('Copied to clipboard')).catch(() => {
       const t = document.createElement('textarea'); t.value = text;
       document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
       toast('Copied to clipboard');
@@ -310,11 +294,11 @@ function closeModal() {
 }
 
 /* ===== Toast ===== */
-function toast(msg, kind = '') {
+function toast(msg) {
   const c = document.getElementById('toasts');
   const t = document.createElement('div');
-  t.className = 'toast' + (kind ? ' ' + kind : '');
-  t.innerHTML = `<i class="fa-solid ${kind === 'err' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i> ${esc(msg)}`;
+  t.className = 'toast';
+  t.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${esc(msg)}`;
   c.appendChild(t);
   setTimeout(() => t.remove(), 3100);
 }
@@ -329,208 +313,110 @@ function spotlight() {
   if (card) {
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     card.classList.add('spotlight');
-    toast(`Spotlight: ${pick.display_name}`);
+    toast(`Spotlight: ${pick.displayName}`);
     setTimeout(() => card.classList.remove('spotlight'), 5000);
   } else {
-    toast(`Spotlight: ${pick.display_name} (not in current view)`);
+    toast(`Spotlight: ${pick.displayName} (not in current view)`);
   }
 }
 
-/* ===== Admin drawer ===== */
-function openDrawer() {
-  document.getElementById('admin-drawer').classList.add('open');
-  document.getElementById('drawer-bg').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  renderAdminList();
-}
-function closeDrawer() {
-  document.getElementById('admin-drawer').classList.remove('open');
-  document.getElementById('drawer-bg').classList.remove('open');
-  document.body.style.overflow = '';
-}
-function renderAdminList() {
-  const box = document.getElementById('admin-list');
-  let list = [...DATA.members];
-  if (adminQuery) {
-    const q = adminQuery.toLowerCase();
-    list = list.filter(m =>
-      (m.display_name || '').toLowerCase().includes(q) ||
-      (m.username || '').toLowerCase().includes(q)
-    );
+/* ===== Starfield ===== */
+function initStarfield() {
+  const cv = document.getElementById('starfield');
+  if (!cv || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const ctx = cv.getContext('2d');
+  let w, h, stars = [], dpr = Math.min(devicePixelRatio || 1, 2);
+  function resize() {
+    w = cv.width = innerWidth * dpr;
+    h = cv.height = innerHeight * dpr;
+    cv.style.width = innerWidth + 'px';
+    cv.style.height = innerHeight + 'px';
+    const count = Math.min(Math.floor((innerWidth * innerHeight) / 7000), 160);
+    stars = Array.from({ length: count }, () => ({
+      x: Math.random() * w, y: Math.random() * h,
+      r: (Math.random() * 1.2 + 0.3) * dpr,
+      a: Math.random() * 0.6 + 0.2,
+      tw: Math.random() * 0.02 + 0.005,
+      phase: Math.random() * Math.PI * 2,
+      vx: (Math.random() - 0.5) * 0.05 * dpr,
+      vy: (Math.random() - 0.5) * 0.05 * dpr,
+    }));
   }
-  list.sort((a, b) => (a.display_name || '').localeCompare(b.display_name || ''));
-  if (!list.length) {
-    box.innerHTML = '<div style="color:var(--text-mute);padding:20px;text-align:center;font-size:0.85rem">No members found</div>';
-    return;
-  }
-  box.innerHTML = list.map(m => {
-    const init = initials(m.display_name || m.username);
-    const grad = avatarGrad(m.display_name || m.username);
-    const avH = m.avatar
-      ? `<img src="${esc(m.avatar)}" alt="" onerror="this.outerHTML='<div class=\\'ai-fb\\' style=\\'background:${grad}\\'>${init}</div>'">`
-      : `<div class="ai-fb" style="background:${grad}">${init}</div>`;
-    return `<div class="admin-item" data-id="${esc(m.id)}">
-      ${avH}
-      <div class="ai-meta">
-        <div class="ai-name">${esc(m.display_name)}</div>
-        <div class="ai-sub">@${esc(m.username)}${m.bot ? ' · Bot' : ''}</div>
-      </div>
-      <div class="ai-actions">
-        <button class="ai-btn" data-act="edit" title="Edit"><i class="fa-solid fa-pen"></i></button>
-        <button class="ai-btn danger" data-act="del" title="Delete"><i class="fa-solid fa-trash"></i></button>
-      </div>
-    </div>`;
-  }).join('');
-  box.querySelectorAll('.admin-item').forEach(item => {
-    item.querySelector('[data-act="edit"]').addEventListener('click', () => {
-      const m = DATA.members.find(x => x.id === item.dataset.id);
-      if (m) openForm(m);
-    });
-    item.querySelector('[data-act="del"]').addEventListener('click', async () => {
-      const m = DATA.members.find(x => x.id === item.dataset.id);
-      if (!m) return;
-      if (!confirm(`Delete "${m.display_name}"? This cannot be undone.`)) return;
-      const { error } = await supabase.from('members').delete().eq('id', m.id);
-      if (error) { toast('Delete failed: ' + error.message, 'err'); return; }
-      await refreshData();
-      toast('Member deleted');
-    });
-  });
-}
-
-/* ===== Add/Edit form ===== */
-function openForm(member = null) {
-  const isEdit = !!member;
-  const m = member || { id: '', username: '', display_name: '', avatar: '', bot: false, joined_at: new Date().toISOString(), roles: [] };
-  const fm = document.getElementById('form-modal');
-  fm.innerHTML = `
-    <div class="fm-head">
-      <h3>${isEdit ? 'Edit member' : 'Add new member'}</h3>
-      <button class="drawer-close" id="fm-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="fm-body">
-      ${!isEdit ? `<div class="fm-row">
-        <label>Discord ID</label>
-        <input id="f-id" placeholder="e.g. 1506326627787739257" value="${esc(m.id)}">
-        <div class="hint">Unique numeric id. Leave blank to auto-generate one.</div>
-      </div>` : ''}
-      <div class="fm-row">
-        <label>Display name *</label>
-        <input id="f-name" placeholder="Shown on the card" value="${esc(m.display_name)}">
-      </div>
-      <div class="fm-row">
-        <label>Username *</label>
-        <input id="f-user" placeholder="@handle" value="${esc(m.username)}">
-      </div>
-      <div class="fm-row">
-        <label>Avatar URL</label>
-        <input id="f-avatar" placeholder="https://cdn.discordapp.com/…" value="${esc(m.avatar || '')}">
-        <div class="hint">Optional. Falls back to a colored gradient if blank or broken.</div>
-      </div>
-      <div class="fm-grid2">
-        <div class="fm-row">
-          <label>Joined date</label>
-          <input id="f-joined" type="date" value="${(m.joined_at || new Date().toISOString()).slice(0, 10)}">
-        </div>
-        <div class="fm-row" style="justify-content:flex-end">
-          <label>&nbsp;</label>
-          <label class="fm-check"><input id="f-bot" type="checkbox" ${m.bot ? 'checked' : ''}><span>Bot account</span></label>
-        </div>
-      </div>
-      <div class="fm-row">
-        <label>Roles</label>
-        <textarea id="f-roles" placeholder="Comma-separated, e.g. Gamers, Techies, He/Him">${esc((m.roles || []).join(', '))}</textarea>
-        <div class="hint">Separate roles with commas. Known roles get colored badges automatically.</div>
-      </div>
-      <div class="fm-actions">
-        ${isEdit ? '<button class="fm-btn danger" id="f-del"><i class="fa-solid fa-trash"></i> Delete</button>' : ''}
-        <button class="fm-btn" id="f-cancel">Cancel</button>
-        <button class="fm-btn primary" id="f-save">${isEdit ? 'Save changes' : 'Add member'}</button>
-      </div>
-    </div>`;
-  document.getElementById('form-modal-bg').classList.add('open');
-
-  const close = () => document.getElementById('form-modal-bg').classList.remove('open');
-  document.getElementById('fm-close').addEventListener('click', close);
-  document.getElementById('f-cancel').addEventListener('click', close);
-
-  if (isEdit) {
-    document.getElementById('f-del').addEventListener('click', async () => {
-      if (!confirm(`Delete "${m.display_name}"? This cannot be undone.`)) return;
-      const { error } = await supabase.from('members').delete().eq('id', m.id);
-      if (error) { toast('Delete failed: ' + error.message, 'err'); return; }
-      close();
-      await refreshData();
-      toast('Member deleted');
-    });
-  }
-
-  document.getElementById('f-save').addEventListener('click', async () => {
-    const name = document.getElementById('f-name').value.trim();
-    const user = document.getElementById('f-user').value.trim();
-    if (!name || !user) { toast('Name and username are required', 'err'); return; }
-
-    const roles = document.getElementById('f-roles').value
-      .split(',').map(r => r.trim()).filter(Boolean);
-    const joinedInput = document.getElementById('f-joined').value;
-    const joinedAt = joinedInput ? new Date(joinedInput + 'T00:00:00Z').toISOString() : new Date().toISOString();
-    const avatarVal = document.getElementById('f-avatar').value.trim() || null;
-    const bot = document.getElementById('f-bot').checked;
-
-    const payload = {
-      username: user,
-      display_name: name,
-      avatar: avatarVal,
-      bot,
-      joined_at: joinedAt,
-      roles,
-    };
-
-    if (isEdit) {
-      const { error } = await supabase.from('members').update(payload).eq('id', m.id);
-      if (error) { toast('Update failed: ' + error.message, 'err'); return; }
-      toast('Member updated');
-    } else {
-      let id = document.getElementById('f-id').value.trim();
-      if (!id) {
-        // Generate a plausible snowflake-ish string id
-        id = (BigInt(Date.now()) << 22n | BigInt(Math.floor(Math.random() * 4194304))).toString();
-      }
-      payload.id = id;
-      const { error } = await supabase.from('members').insert(payload);
-      if (error) { toast('Add failed: ' + error.message, 'err'); return; }
-      toast('Member added');
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    t += 1;
+    for (const s of stars) {
+      s.x += s.vx; s.y += s.vy;
+      if (s.x < 0) s.x = w; if (s.x > w) s.x = 0;
+      if (s.y < 0) s.y = h; if (s.y > h) s.y = 0;
+      const alpha = s.a * (0.5 + 0.5 * Math.sin(t * s.tw + s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(220, 230, 255, ${alpha})`;
+      ctx.fill();
     }
-    close();
-    await refreshData();
-  });
+    requestAnimationFrame(draw);
+  }
+  resize();
+  draw();
+  addEventListener('resize', resize);
 }
 
-/* ===== Data refresh from Supabase ===== */
-async function refreshData() {
-  const [{ data: server }, { data: members }] = await Promise.all([
-    supabase.from('server_info').select('*').eq('id', 1).maybeSingle(),
-    supabase.from('members').select('*'),
-  ]);
-  if (server) {
-    DATA.serverName = server.server_name;
-    DATA.exportedAt = server.exported_at;
-  }
-  DATA.members = (members || []).map(m => ({
+/* ===== Cursor glow ===== */
+function initCursorGlow() {
+  const glow = document.getElementById('cursor-glow');
+  if (!glow || matchMedia('(pointer: coarse)').matches) return;
+  let tx = 0, ty = 0, cx = 0, cy = 0;
+  addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; });
+  (function loop() {
+    cx += (tx - cx) * 0.12; cy += (ty - cy) * 0.12;
+    glow.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+    requestAnimationFrame(loop);
+  })();
+}
+
+/* ===== Scroll-aware nav ===== */
+function initScrollNav() {
+  const nav = document.getElementById('nav');
+  if (!nav) return;
+  const onScroll = () => nav.classList.toggle('scrolled', scrollY > 20);
+  onScroll();
+  addEventListener('scroll', onScroll, { passive: true });
+}
+
+/* ===== Reveal on scroll ===== */
+function initReveal() {
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+}
+
+/* ===== Data load from members.json ===== */
+async function loadData() {
+  const res = await fetch('members.json');
+  if (!res.ok) throw new Error('Failed to load members.json (HTTP ' + res.status + ')');
+  const raw = await res.json();
+  DATA.serverName = raw.serverName || 'Community';
+  DATA.exportedAt = raw.exportedAt || null;
+  DATA.members = (raw.members || []).map(m => ({
     id: m.id,
     username: m.username,
-    display_name: m.display_name,
+    displayName: m.displayName,
     avatar: m.avatar,
     bot: m.bot,
-    joined_at: m.joined_at,
+    joinedAt: m.joinedAt,
     roles: m.roles || [],
   }));
+}
+
+function renderAll() {
   const s = computeStats(DATA.members);
   renderStats(s);
   renderVibes(s);
   renderChips(s);
   renderMembers();
-  renderAdminList();
   document.getElementById('nav-name').textContent = DATA.serverName;
   const hm = DATA.members.filter(m => !m.bot).length;
   const bt = DATA.members.length - hm;
@@ -538,26 +424,29 @@ async function refreshData() {
     `<span>${DATA.members.length}</span> members <span class="dot"></span> <span>${hm}</span> humans <span class="dot"></span> <span>${bt}</span> bots`;
   document.getElementById('hero-date').textContent = 'Last updated ' + fmtDate(DATA.exportedAt || new Date());
   document.getElementById('hero-title').textContent = DATA.serverName || 'Community';
+  initReveal();
 }
 
 /* ===== Init ===== */
 async function init() {
   const loadEl = document.getElementById('load');
+  initStarfield();
+  initCursorGlow();
+  initScrollNav();
   try {
-    await refreshData();
+    await loadData();
   } catch (e) {
-    loadEl.innerHTML = `<div class="err-screen"><i class="fa-solid fa-triangle-exclamation"></i><p>Failed to load community data</p><p style="margin-top:6px">${esc(e.message || 'Unknown error')}</p></div>`;
+    loadEl.innerHTML = `<div class="err-screen"><i class="fa-solid fa-triangle-exclamation"></i><p>Failed to load community data</p><p style="margin-top:6px;font-size:0.85rem">${esc(e.message || 'Unknown error')}</p></div>`;
     return;
   }
   loadEl.style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  renderAll();
 
-  // Search
   const inp = document.getElementById('search');
   let t;
   inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { query = inp.value.trim(); renderMembers(); }, 180); });
 
-  // Bot toggle
   document.getElementById('bot-btn').addEventListener('click', function () {
     botsOn = !botsOn;
     this.innerHTML = botsOn
@@ -568,7 +457,6 @@ async function init() {
     renderMembers();
   });
 
-  // View toggle
   document.getElementById('view-btn').addEventListener('click', function () {
     view = view === 'grid' ? 'list' : 'grid';
     document.getElementById('members-grid').classList.toggle('list-view', view === 'list');
@@ -577,39 +465,18 @@ async function init() {
     renderMembers();
   });
 
-  // Random
   document.getElementById('rand-btn').addEventListener('click', spotlight);
 
-  // Admin drawer
-  document.getElementById('admin-btn').addEventListener('click', openDrawer);
-  document.getElementById('drawer-close').addEventListener('click', closeDrawer);
-  document.getElementById('drawer-bg').addEventListener('click', closeDrawer);
-  document.getElementById('add-member-btn').addEventListener('click', () => openForm(null));
-  const aSearch = document.getElementById('admin-search');
-  let at;
-  aSearch.addEventListener('input', () => { clearTimeout(at); at = setTimeout(() => { adminQuery = aSearch.value.trim(); renderAdminList(); }, 160); });
-
-  // Modal outside click
   document.getElementById('modal-bg').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
-  document.getElementById('form-modal-bg').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
 
-  // Keyboard shortcuts
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      closeModal();
-      document.getElementById('form-modal-bg').classList.remove('open');
-      closeDrawer();
-    }
-    if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) {
       e.preventDefault(); inp.focus();
     }
-    if (e.key.toLowerCase() === 'r' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA'
-        && !document.getElementById('modal-bg').classList.contains('open') && !document.getElementById('admin-drawer').classList.contains('open')) {
+    if (e.key.toLowerCase() === 'r' && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)
+        && !document.getElementById('modal-bg').classList.contains('open')) {
       spotlight();
-    }
-    if (e.key.toLowerCase() === 'm' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-      const open = document.getElementById('admin-drawer').classList.contains('open');
-      open ? closeDrawer() : openDrawer();
     }
   });
 }

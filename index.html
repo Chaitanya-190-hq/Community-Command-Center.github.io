@@ -6,6 +6,11 @@
   <title>Unison Community Dashboard</title>
   <meta name="description" content="Live member dashboard for the Unison Community Discord server">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%94%97%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/style.css">
   <script>
     // GitHub Pages SPA base path: redirect deep links to index.html
     (function () {
@@ -20,13 +25,10 @@
       }
     })();
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+
   <div class="bg-layer" aria-hidden="true">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
@@ -34,11 +36,13 @@
     <div class="grid-overlay"></div>
   </div>
 
-  <nav>
+  <div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
+
+  <nav id="nav">
     <div class="container nav-inner">
       <div class="nav-logo">
         <div class="logo-mark">U</div>
-        <span id="nav-name">Loading…</span>
+        <span id="nav-name">Unison</span>
       </div>
       <div class="nav-actions">
         <button class="nav-btn active" id="bot-btn" title="Toggle bots" aria-pressed="true">
@@ -50,23 +54,20 @@
         <button class="nav-btn primary" id="rand-btn" title="Random member (R)">
           <i class="fa-solid fa-shuffle"></i> <span class="hide-sm">Random</span>
         </button>
-        <button class="nav-btn ghost" id="admin-btn" title="Manage members">
-          <i class="fa-solid fa-pen-to-square"></i> <span class="hide-sm">Manage</span>
-        </button>
       </div>
     </div>
   </nav>
 
   <div class="container" id="load">
     <div class="load-screen">
-      <div class="load-spin"></div>
+      <div class="load-orbit"><div class="load-core"></div></div>
       <p>Loading community data…</p>
     </div>
   </div>
 
   <div class="container" id="app" style="display:none">
     <header class="hero">
-      <div class="hero-eyebrow">Discord Server</div>
+      <div class="hero-eyebrow"><span class="pulse-dot"></span> Discord Server</div>
       <h1 id="hero-title">Unison Community</h1>
       <p class="hero-meta" id="hero-meta">Loading…</p>
       <p class="hero-date" id="hero-date"></p>
@@ -93,6 +94,7 @@
           <div class="search-wrap">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="search" placeholder="Search by name or username…  (press /)" aria-label="Search members">
+            <kbd>/</kbd>
           </div>
         </div>
         <div class="chip-row" id="chips" role="tablist" aria-label="Filter by role"></div>
@@ -101,44 +103,21 @@
     </section>
   </div>
 
-  <!-- Member detail modal -->
   <div class="modal-bg" id="modal-bg" role="dialog" aria-modal="true">
     <div class="modal-box" id="modal-box"></div>
-  </div>
-
-  <!-- Admin drawer -->
-  <div class="drawer-bg" id="drawer-bg"></div>
-  <aside class="drawer" id="admin-drawer" aria-label="Manage members">
-    <div class="drawer-head">
-      <h3><i class="fa-solid fa-pen-to-square"></i> Manage Members</h3>
-      <button class="drawer-close" id="drawer-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="drawer-body">
-      <button class="add-btn" id="add-member-btn"><i class="fa-solid fa-plus"></i> Add new member</button>
-      <div class="admin-search-wrap">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="admin-search" placeholder="Search members to edit…">
-      </div>
-      <div class="admin-list" id="admin-list"></div>
-    </div>
-  </aside>
-
-  <!-- Add/Edit member form modal -->
-  <div class="modal-bg" id="form-modal-bg" role="dialog" aria-modal="true">
-    <div class="form-modal" id="form-modal"></div>
   </div>
 
   <div class="toast-area" id="toasts" aria-live="polite"></div>
 
   <footer>
     <div class="container">
-      <p>Unison Community Dashboard &middot; Data stored in Supabase &middot; Edit anytime via <strong>Manage</strong></p>
+      <p>Unison Community Dashboard &middot; Data from <code>members.json</code></p>
       <p style="margin-top:4px;opacity:0.55">
-        <kbd>/</kbd> search &middot; <kbd>R</kbd> random &middot; <kbd>Esc</kbd> close &middot; <kbd>M</kbd> manage
+        <kbd>/</kbd> search &middot; <kbd>R</kbd> random &middot; <kbd>Esc</kbd> close
       </p>
     </div>
   </footer>
 
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
